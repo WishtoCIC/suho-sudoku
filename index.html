@@ -890,8 +890,8 @@ function devClass(){const W=innerWidth,H=innerHeight;document.body.classList.tog
    CLOUD_URL / CLOUD_KEY 가 비어 있으면 이 기기에만 저장돼요.
    키는 Supabase 의 anon(publishable) 키 — 테이블은 RLS 로 잠겨 있고
    sudoku_load / sudoku_save 함수로만 접근하므로 공개돼도 괜찮아요. */
-const CLOUD_URL = '';
-const CLOUD_KEY = '';
+const CLOUD_URL = 'https://bxigtnsdelbbiamtqwrp.supabase.co';
+const CLOUD_KEY = 'sb_publishable_FmdN0w1mtEZ1I345Va9Q0Q_vRWeFkv3';
 const Cloud = (()=>{
   const ALPHA='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = store.get('syncCode','');
@@ -901,7 +901,7 @@ const Cloud = (()=>{
   function norm(c){c=(c||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(c.startsWith('SUHO'))c=c.slice(4);return c.length===8?'SUHO-'+c.slice(0,4)+'-'+c.slice(4):''}
   async function rpc(fn,body){
     const r=await fetch(CLOUD_URL.replace(/\/$/,'')+'/rest/v1/rpc/'+fn,{method:'POST',
-      headers:{'Content-Type':'application/json',apikey:CLOUD_KEY,Authorization:'Bearer '+CLOUD_KEY},body:JSON.stringify(body)});
+      headers:Object.assign({'Content-Type':'application/json',apikey:CLOUD_KEY},CLOUD_KEY.startsWith('eyJ')?{Authorization:'Bearer '+CLOUD_KEY}:{}),body:JSON.stringify(body)});
     if(!r.ok) throw new Error(r.status+' '+await r.text());
     const t=await r.text();return t?JSON.parse(t):null;
   }
