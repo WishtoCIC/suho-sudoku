@@ -3,7 +3,7 @@
 초등학교 1학년 수호를 위한 어린이 스도쿠(보드게임 방식) 웹앱. 단일 HTML 파일, 빌드 없음.
 
 - 사용 기기: 갤럭시 탭 S7(+S펜), 갤럭시 S25+ 휴대폰
-- 배포: Vercel (이 저장소 연결, 정적 사이트) / 오프라인: `index.html` 파일을 탭에 넣어 삼성 인터넷으로 실행
+- 배포: **https://suho-sudoku.vercel.app** (Vercel, main 푸시 시 자동 배포) / 오프라인: `index.html` 파일을 탭에 넣어 삼성 인터넷으로 실행
 - 이어하기: Supabase (`supabase/schema.sql`)
 
 ## 기능 (v1.4)
@@ -30,7 +30,7 @@
 - 2026-11-08 v1.0 첫 버전 (그림 스도쿠 4×4/6×6, 6단계)
 - v1.1 S펜 숫자 인식, 펜 연습장, 탭 최적화
 - v1.2~1.3 휴대폰(S25+) 화면 배치, 말 줄 잘림 수정, 버전 표시
-- v1.4 Supabase 이어하기, GitHub 저장소 이전 (Vercel 배포 대기: MCP 연결에 ongdoll 팀 권한 없음 → 대시보드에서 Import)
+- v1.4 Supabase 이어하기, GitHub 저장소 이전, Vercel 배포(suho-sudoku.vercel.app), 실제 Supabase 저장/불러오기 확인
 
 ## 확인 못 한 것 / 다음 할 일
 - 참고하려던 네이버 블로그(m.blog.naver.com/ssbb-11/224457196019)는 열지 못해 일반적인 어린이 스도쿠 방식으로 구현
