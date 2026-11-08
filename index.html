@@ -243,7 +243,7 @@
     <button class="pill" id="fsPill">⛶ 전체 화면</button>
     <button class="pill" id="soundBtn">🔊 소리 켜짐</button>
   </div>
-  <div style="margin-top:14px;font-size:14px;opacity:.45">버전 1.5 · 11월 8일</div>
+  <div style="margin-top:14px;font-size:14px;opacity:.45">버전 1.6 · 11월 8일</div>
 </section>
 
 <!-- GAME -->
@@ -302,7 +302,7 @@
     <div class="rule"><span class="e">⬇️</span><span><b>세로줄</b>에도 친구들이 한 번씩만 들어가요.</span></div>
     <div class="rule"><span class="e">🟫</span><span>굵은 선으로 나뉜 <b>작은 방</b>에도 한 번씩만!</span></div>
     <div class="rule"><span class="e">✍️</span><span><b>숫자</b> 말로 할 때는 S펜으로 빈 칸에 숫자를 직접 써도 돼요.</span></div>
-    <div class="rule"><span class="e">👆</span><span>오른쪽에서 친구를 고르고, 빈 칸을 톡! 눌러요. 내가 놓은 친구를 다시 누르면 빠져요.</span></div>
+    <div class="rule"><span class="e">👆</span><span>먼저 <b>빈 칸</b>을 톡! 누르고, 아래에서 친구를 골라요. 내가 놓은 친구를 다시 누르면 빠져요.</span></div>
     <p>모든 칸을 채우면 별을 받아요! ⭐</p></div>
     <div id="howAdult" style="display:none">
     <div class="rule"><span class="e">🔢</span><span>가로줄·세로줄·굵은 선 상자마다 1~9가 한 번씩 들어가요.</span></div>
@@ -687,7 +687,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)Timer.pause
 let G=null;
 function newG(extra){
   if(typeof hidePicker==='function'){hidePicker();ink=null;}
-  G=Object.assign({selected:null,focus:null,hints:3,mistakes:0,hintsUsed:0,history:[],memo:false,done:false},extra);
+  G=Object.assign({selected:null,peek:0,focus:null,hints:3,mistakes:0,hintsUsed:0,history:[],memo:false,done:false},extra);
   G.cur=G.puz.map(r=>[...r]);G.notes=G.puz.map(r=>r.map(()=>0));
 }
 function startLevel(i){
@@ -695,7 +695,7 @@ function startLevel(i){
   const {S,sol,puz}=makePuzzle(L);
   newG({mode:'kid',i,L:Object.assign({},L,{S}),sol,puz});
   $('gTitle').textContent=`${i+1}단계 · ${L.name}`;$('gTime').textContent='';
-  $('msg').textContent='친구를 골라서 빈 칸에 놓아 봐!';
+  $('msg').textContent='빈 칸을 누르고 아래에서 친구를 골라 봐!';
   Timer.pause();show('game');renderGame();
 }
 function startAdult(vk,dk){
@@ -745,7 +745,7 @@ function renderGame(){
   const sel=G.selected;
   const fi=G.focus?G.focus[0]*n+G.focus[1]:-1, fpeers=fi>=0?new Set(S.peers[fi]):null;
   const fv=fi>=0?G.cur[G.focus[0]][G.focus[1]]:0;
-  const hv=sel||fv;
+  const hv=fv||G.peek||0;
   for(let r=0;r<n;r++)for(let c=0;c<n;c++){
     const d=document.createElement('div'),i=r*n+c;
     const v=G.cur[r][c], given=G.puz[r][c]!==0;
@@ -811,14 +811,17 @@ function conflict(r,c,v){
 function snap(){G.history.push({cur:G.cur.map(r=>[...r]),notes:G.notes.map(r=>[...r])});if(G.history.length>300)G.history.shift()}
 
 function trayPick(v){
-  sfx.tap();
-  if(G.focus){
-    const [r,c]=G.focus;
-    if(!isAdult())G.focus=null;
-    if(v===0){erase(r,c);return}
-    place(r,c,v);return;
+  G.selected=null;
+  if(!G.focus){                       // 칸을 먼저 골라야 해요
+    beep([500,420],0.08);G.peek=v||0;
+    say(isAdult()?'먼저 위에서 칸을 눌러 주세요 👆':'먼저 위에서 빈 칸을 톡! 눌러 줘 👆');
+    renderGame();return;
   }
-  G.selected = G.selected===v?null:v;renderGame();
+  sfx.tap();
+  const [r,c]=G.focus;
+  if(!isAdult())G.focus=null;
+  if(v===0){erase(r,c);return}
+  place(r,c,v);
 }
 function erase(r,c){
   if(G.puz[r][c]!==0)return;
@@ -826,17 +829,12 @@ function erase(r,c){
   renderGame();
 }
 function onCell(r,c){
-  if(isAdult()){
-    if(G.selected!=null&&G.puz[r][c]===0){ if(G.selected===0)erase(r,c);else place(r,c,G.selected);G.focus=[r,c];renderGame();return }
-    G.focus=[r,c];renderGame();return;
-  }
-  if(G.puz[r][c]!==0){ G.selected=G.cur[r][c];G.focus=null;sfx.tap();renderGame();return; }
-  if(G.selected===0 || (G.cur[r][c] && G.selected==null) || (G.cur[r][c] && G.cur[r][c]===G.selected)){
-    if(G.cur[r][c]){erase(r,c);sfx.tap();return}
-    renderGame();return;
-  }
-  if(G.selected==null){G.focus=[r,c];sfx.tap();say('이 칸에 들어갈 친구를 골라 봐!');renderGame();return}
-  place(r,c,G.selected);
+  G.selected=null;G.peek=0;
+  if(isAdult()){ sfx.tap();G.focus=[r,c];renderGame();return; }
+  if(G.puz[r][c]!==0){ G.peek=G.cur[r][c];G.focus=null;sfx.tap();say('');renderGame();return; }   // 처음부터 있던 칸: 같은 친구만 보여주기
+  if(G.cur[r][c]){ G.focus=null;erase(r,c);sfx.tap();return; }                                     // 내가 놓은 친구: 빼기
+  if(G.focus&&G.focus[0]===r&&G.focus[1]===c){G.focus=null;say('');renderGame();return}             // 같은 칸 다시 누르면 선택 취소
+  G.focus=[r,c];sfx.tap();say('이 칸에 들어갈 친구를 아래에서 골라 봐!');renderGame();
 }
 
 function place(r,c,v){
@@ -847,7 +845,7 @@ function place(r,c,v){
     snap();G.notes[r][c]^=(1<<v);sfx.tap();renderGame();return;
   }
   if(isAdult()&&G.cur[r][c]===v){erase(r,c);return}
-  snap();
+  snap();G.selected=null;G.peek=0;
   G.cur[r][c]=v;G.notes[r][c]=0;
   if(isAdult())for(const p of G.L.S.peers[r*n+c])G.notes[p/n|0][p%n]&=~(1<<v);  // 같은 줄·칸 메모 자동 정리
   const bad=conflict(r,c,v);
