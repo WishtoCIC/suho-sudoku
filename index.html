@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#FFF6E5">
+<title>수호의 스도쿠 놀이터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFF6E5; --wood:#E8B878; --wood-d:#C98E4C; --wood-dd:#9A6630;
+    --ink:#4A3420; --mint:#7ED6B5; --pink:#FF9AA8; --sky:#8CC8FF; --yellow:#FFD166;
+    --cell:#FFF9EF; --given:#F3E1C4; --bad:#FF6B6B;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'Jua',system-ui,sans-serif;overflow-x:hidden}
+  input{user-select:text;-webkit-user-select:text}
+  button{font-family:inherit;cursor:pointer;border:none}
+  .screen{display:none;min-height:100vh;padding:20px;flex-direction:column;align-items:center}
+  .screen.on{display:flex}
+
+  /* ---------- HOME ---------- */
+  h1{font-size:clamp(34px,6vw,58px);margin:18px 0 4px;letter-spacing:1px;text-align:center}
+  h1 .s{color:#E07A5F} h1 .u{color:#3D9970} h1 .d{color:#4A90D9}
+  .sub{font-size:clamp(18px,2.6vw,24px);opacity:.75;margin-bottom:18px;text-align:center}
+  .stamps{background:#fff;border-radius:22px;padding:10px 20px;font-size:22px;margin-bottom:18px;box-shadow:0 4px 0 #0001}
+  .levels{display:grid;grid-template-columns:repeat(3,minmax(150px,220px));gap:18px;margin-bottom:20px}
+  @media (max-width:620px){.levels{grid-template-columns:repeat(2,1fr)}}
+  .lv{background:#fff;border-radius:26px;padding:16px 10px 12px;box-shadow:0 6px 0 var(--wood-d);font-size:22px;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:6px;transition:transform .1s}
+  .lv:active{transform:translateY(4px);box-shadow:0 2px 0 var(--wood-d)}
+  .lv .num{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-size:28px;color:#fff}
+  .lv .size{font-size:17px;opacity:.7}
+  .lv .stars{font-size:20px;letter-spacing:2px;min-height:24px}
+  .lv.locked{opacity:.45;filter:grayscale(.8)}
+  .row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  .pill{background:#fff;border-radius:999px;padding:10px 20px;font-size:21px;box-shadow:0 4px 0 #0002;color:var(--ink)}
+  .pill.sel{background:var(--yellow);box-shadow:0 4px 0 #D9A92E}
+  .label{font-size:20px;margin:6px 0 10px;opacity:.8}
+  .bigbtn{background:var(--mint);color:#fff;font-size:26px;padding:14px 34px;border-radius:999px;box-shadow:0 6px 0 #4FAF8C;margin-top:14px}
+  .bigbtn:active{transform:translateY(4px);box-shadow:0 2px 0 #4FAF8C}
+
+  /* ---------- GAME ---------- */
+  .top{width:100%;max-width:900px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+  .icon{background:#fff;width:58px;height:58px;border-radius:18px;font-size:28px;box-shadow:0 4px 0 #0002;display:grid;place-items:center}
+  .icon:active{transform:translateY(3px);box-shadow:0 1px 0 #0002}
+  .title{font-size:clamp(22px,3.4vw,30px);text-align:center}
+  .main{display:flex;gap:26px;align-items:center;justify-content:center;flex-wrap:wrap;width:100%;max-width:1100px}
+  .boardwrap{background:linear-gradient(145deg,var(--wood),var(--wood-d));padding:16px;border-radius:30px;box-shadow:0 10px 0 var(--wood-dd),inset 0 2px 0 #fff6}
+  .board{display:grid;gap:0;background:var(--wood-dd);border-radius:16px;overflow:hidden;border:5px solid var(--wood-dd)}
+  .cell{background:var(--cell);display:grid;place-items:center;position:relative;border:2px solid #D8B98E;transition:background .15s}
+  .cell.given{background:var(--given)}
+  .cell.bR{border-right:5px solid var(--wood-dd)}
+  .cell.bB{border-bottom:5px solid var(--wood-dd)}
+  .cell.hl{background:#FFF0B8}
+  .cell.focus{box-shadow:inset 0 0 0 5px var(--sky)}
+  .cell.bad .piece{animation:shake .4s}
+  .cell.bad{background:#FFD9D9}
+  .cell.ok .piece{animation:pop .35s}
+  .cell.hint{animation:glow 1s ease 2}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  @keyframes pop{0%{transform:scale(.3)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+  @keyframes glow{50%{background:#C9F7E4}}
+  .piece{width:84%;height:84%;border-radius:50%;display:grid;place-items:center;line-height:1}
+  .piece.user{background:#fff;box-shadow:0 3px 0 #0002}
+  .given .piece{background:transparent}
+  .tray{max-width:100%;display:grid;gap:14px;background:#fff;padding:16px;border-radius:28px;box-shadow:0 6px 0 #0001}
+  .tp{width:clamp(66px,9vw,92px);height:clamp(66px,9vw,92px);border-radius:22px;background:var(--cell);display:grid;place-items:center;box-shadow:0 5px 0 #D8B98E;position:relative}
+  .tp.sel{background:var(--yellow);box-shadow:0 5px 0 #D9A92E;transform:scale(1.06)}
+  .tp.done{opacity:.35}
+  .tp .cnt{position:absolute;right:6px;bottom:4px;font-size:14px;opacity:.6}
+  .tp.erase{font-size:30px}
+  .tools{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;justify-content:center}
+  .tool{background:#fff;padding:10px 18px;border-radius:18px;font-size:20px;box-shadow:0 4px 0 #0002;color:var(--ink)}
+  .tool:active{transform:translateY(3px);box-shadow:0 1px 0 #0002}
+  .tool[disabled]{opacity:.4}
+  .msg{min-height:34px;font-size:22px;margin-top:10px;text-align:center}
+  .colordot{width:78%;height:78%;border-radius:50%;box-shadow:inset 0 -5px 0 #0002}
+  .numtxt{font-weight:bold}
+
+  /* ---------- overlays ---------- */
+  .ov{position:fixed;inset:0;background:#4A342099;display:none;align-items:center;justify-content:center;z-index:20;padding:20px}
+  .ov.on{display:flex}
+  .card{background:#fff;border-radius:32px;padding:28px 30px;max-width:620px;width:100%;text-align:center;box-shadow:0 10px 0 #0003;max-height:92vh;overflow:auto}
+  .card h2{font-size:34px;margin:4px 0 12px}
+  .card p{font-size:22px;line-height:1.5;margin:8px 0}
+  .bigstars{font-size:64px;letter-spacing:6px;margin:6px 0}
+  .rule{display:flex;align-items:center;gap:14px;text-align:left;background:var(--bg);border-radius:20px;padding:12px 16px;margin:10px 0;font-size:21px}
+  .rule .e{font-size:38px}
+  canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:30}
+
+  /* ---------- 펜 / 탭 ---------- */
+  html,body{overscroll-behavior:none;touch-action:manipulation}
+  .bwrap{position:relative;touch-action:none}
+  #ink{position:absolute;inset:0;pointer-events:none;z-index:5}
+  .cell.writing{background:#E7F4FF;box-shadow:inset 0 0 0 4px var(--sky)}
+  .penTip{font-size:19px;background:#E7F4FF;border-radius:16px;padding:8px 14px;margin-top:12px;text-align:center;display:none}
+  .penTip.on{display:block}
+  .picker{position:fixed;z-index:25;background:#fff;border-radius:22px;padding:10px;box-shadow:0 8px 24px #0004;display:none;gap:10px;align-items:center}
+  .picker.on{display:flex}
+  .picker .q{font-size:18px;padding:0 6px}
+  .picker button{width:64px;height:64px;border-radius:18px;background:var(--cell);font-size:38px;box-shadow:0 4px 0 #D8B98E;font-family:inherit;color:var(--ink)}
+  .picker button.x{background:#eee;font-size:26px;box-shadow:0 4px 0 #ccc}
+  .fsBtn{position:fixed;right:14px;bottom:14px;z-index:15;background:#fff;width:52px;height:52px;border-radius:16px;font-size:24px;box-shadow:0 4px 0 #0002}
+  /* 연습장 */
+  .pad{background:#fff;border-radius:28px;box-shadow:0 6px 0 #0002;touch-action:none;display:block;
+       background-image:linear-gradient(#0000 49.5%,#F0E2CC 49.5%,#F0E2CC 50.5%,#0000 50.5%),linear-gradient(90deg,#0000 49.5%,#F0E2CC 49.5%,#F0E2CC 50.5%,#0000 50.5%)}
+  .digits{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:10px 0 14px}
+  .digits button{width:58px;height:58px;border-radius:16px;background:#fff;font-size:30px;box-shadow:0 4px 0 #0002;color:var(--ink);position:relative}
+  .digits button.sel{background:var(--yellow);box-shadow:0 4px 0 #D9A92E}
+  .digits button small{position:absolute;right:4px;bottom:1px;font-size:12px;opacity:.6}
+  /* 반응형 배치 */
+  #game{padding:12px}
+  .main{gap:22px}
+  .side{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .tray{justify-content:center}
+  .tp{width:var(--t,80px)!important;height:var(--t,80px)!important;border-radius:calc(var(--t,80px)*.24)}
+  .tools.gtools{margin-top:2px}
+  .penTip{margin-top:0}
+  body.land .gtools{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  body.land .gtools .tool{padding:10px 8px}
+  /* 휴대폰 */
+  body.phone .fsBtn{display:none}
+  body.phone #game{padding:8px 8px 4px}
+  body.phone #game .top{margin-bottom:4px}
+  body.phone .icon{width:46px;height:46px;font-size:22px;border-radius:14px}
+  body.phone .title{font-size:20px}
+  body.phone .main{gap:12px}
+  body.phone .boardwrap{border-radius:20px;box-shadow:0 6px 0 var(--wood-dd),inset 0 2px 0 #fff6}
+  body.phone .board{border-radius:10px;border-width:4px}
+  body.phone .cell{border-width:1.5px}
+  body.phone .cell.bR{border-right-width:4px} body.phone .cell.bB{border-bottom-width:4px}
+  body.phone .tray{padding:10px;gap:8px;border-radius:20px}
+  body.phone .tp .cnt{font-size:11px;right:4px;bottom:2px}
+  body.phone .lt{display:none}
+  body.phone .gtools{display:flex;flex-wrap:nowrap;gap:10px}
+  body.phone .gtools .tool{font-size:24px;padding:8px 18px;border-radius:16px}
+  body.phone .msg{font-size:18px;margin-top:0;min-height:26px}
+  body.phone .penTip{display:none!important}
+  body.phone:not(.land) #game .main{flex:1;align-content:center}
+  body.phone.land .gtools{display:grid;grid-template-columns:1fr 1fr}
+  body.phone.land .title{font-size:17px}
+  body.phone.land .msg{font-size:16px}
+  @media (max-width:600px){
+    .screen{padding:14px 12px}
+    h1{font-size:32px;margin-top:6px}
+    .sub{font-size:16px;margin-bottom:10px}
+    .stamps{font-size:18px;padding:6px 16px;margin-bottom:12px}
+    .label{font-size:17px;margin:2px 0 8px}
+    #themeRow{gap:8px;margin-bottom:12px!important}
+    .pill{font-size:16px;padding:8px 13px}
+    .levels{grid-template-columns:repeat(3,1fr);gap:10px;width:100%;margin-bottom:14px}
+    .lv{padding:10px 4px 8px;font-size:15px;border-radius:18px;gap:3px;box-shadow:0 4px 0 var(--wood-d)}
+    .lv .num{width:38px;height:38px;font-size:20px}
+    .lv .size{font-size:12px} .lv .stars{font-size:13px;min-height:16px;letter-spacing:0}
+    .fsBtn{display:none}
+    .card{padding:20px 16px;border-radius:24px} .card h2{font-size:26px} .card p{font-size:18px}
+    .rule{font-size:16px;padding:8px 10px;gap:10px} .rule .e{font-size:28px}
+    .bigbtn{font-size:21px;padding:11px 24px}
+    .digits button{width:50px;height:50px;font-size:26px}
+    #practice .tools .tool{font-size:16px;padding:8px 12px}
+  }
+  .guess{font-size:60px;min-height:76px;text-align:center}
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<section class="screen on" id="home">
+  <h1><span class="s">수호</span>의 <span class="u">스도쿠</span> <span class="d">놀이터</span></h1>
+  <div class="sub">같은 친구는 한 줄에 한 번만! 🧩</div>
+  <div class="stamps" id="stampBox">⭐ 0</div>
+
+  <div class="label">어떤 말로 할까?</div>
+  <div class="row" id="themeRow" style="margin-bottom:18px"></div>
+
+  <div class="label">단계를 골라봐!</div>
+  <div class="levels" id="levels"></div>
+
+  <div class="row">
+    <button class="pill" id="howBtn">📖 놀이 방법</button>
+    <button class="pill" id="padBtn">✍️ 펜 연습장</button>
+    <button class="pill" id="cloudBtn">☁️ 이어하기</button>
+    <button class="pill" id="fsPill">⛶ 전체 화면</button>
+    <button class="pill" id="soundBtn">🔊 소리 켜짐</button>
+  </div>
+  <div style="margin-top:14px;font-size:14px;opacity:.45">버전 1.4 · 11월 8일</div>
+</section>
+
+<!-- GAME -->
+<section class="screen" id="game">
+  <div class="top">
+    <button class="icon" id="backBtn" aria-label="처음으로">🏠</button>
+    <div class="title" id="gTitle">1단계</div>
+    <button class="icon" id="newBtn" aria-label="새 문제">🔄</button>
+  </div>
+  <div class="main">
+    <div class="boardwrap"><div class="bwrap" id="bwrap"><div class="board" id="board"></div><canvas id="ink"></canvas></div></div>
+    <div class="side" id="side">
+      <div class="tray" id="tray"></div>
+      <div class="penTip" id="penTip">✍️ 펜으로 빈 칸에 숫자를 써도 돼요!</div>
+      <div class="tools gtools">
+        <button class="tool" id="hintBtn">💡<span class="lt"> 힌트</span> <span id="hintLeft">3</span></button>
+        <button class="tool" id="undoBtn">↩️<span class="lt"> 되돌리기</span></button>
+        <button class="tool" id="helpBtn">👀<span class="lt"> 도우미 켜짐</span></button>
+        <button class="tool" id="fingerBtn" style="display:none">☝️<span class="lt"> 손가락 쓰기</span></button>
+      </div>
+      <div class="msg" id="msg"></div>
+    </div>
+  </div>
+</section>
+
+<!-- PEN PRACTICE -->
+<section class="screen" id="practice">
+  <div class="top">
+    <button class="icon" id="padBack" aria-label="처음으로">🏠</button>
+    <div class="title">✍️ 펜 연습장</div>
+    <div style="width:58px"></div>
+  </div>
+  <div class="sub" style="margin:0">숫자를 골라서 크게 써 보세요. 내가 쓴 모양을 기억하면 더 잘 알아봐요!</div>
+  <div class="digits" id="digits"></div>
+  <canvas class="pad" id="pad"></canvas>
+  <div class="guess" id="guess" style="min-height:64px;font-size:52px"></div>
+  <div class="tools" style="margin-top:4px">
+    <button class="tool" id="padClear">🧽 지우기</button>
+    <button class="tool" id="padSave">💾 이렇게 쓸래요</button>
+    <button class="tool" id="padTest">🤖 맞혀 봐!</button>
+    <button class="tool" id="padReset">🗑️ 기억 지우기</button>
+  </div>
+  <div class="msg" id="padMsg"></div>
+</section>
+
+<div class="picker" id="picker"></div>
+<button class="fsBtn" id="fsBtn" aria-label="전체 화면">⛶</button>
+
+<!-- HOW TO -->
+<div class="ov" id="howOv">
+  <div class="card">
+    <h2>📖 스도쿠 놀이 방법</h2>
+    <div class="rule"><span class="e">➡️</span><span><b>가로줄</b>에는 친구들이 한 번씩만 들어가요.</span></div>
+    <div class="rule"><span class="e">⬇️</span><span><b>세로줄</b>에도 친구들이 한 번씩만 들어가요.</span></div>
+    <div class="rule"><span class="e">🟫</span><span>굵은 선으로 나뉜 <b>작은 방</b>에도 한 번씩만!</span></div>
+    <div class="rule"><span class="e">✍️</span><span><b>숫자</b> 말로 할 때는 S펜으로 빈 칸에 숫자를 직접 써도 돼요.</span></div>
+    <div class="rule"><span class="e">👆</span><span>오른쪽에서 친구를 고르고, 빈 칸을 톡! 눌러요. 내가 놓은 친구를 다시 누르면 빠져요.</span></div>
+    <p>모든 칸을 채우면 별을 받아요! ⭐</p>
+    <button class="bigbtn" id="howClose">알았어요!</button>
+  </div>
+</div>
+
+<!-- CLOUD -->
+<div class="ov" id="cloudOv">
+  <div class="card">
+    <h2>☁️ 이어하기</h2>
+    <p style="font-size:18px">탭과 휴대폰에 <b>같은 가족 코드</b>를 넣으면<br>별·단계·펜 글씨가 함께 이어져요.</p>
+    <div id="cloudCodeBox" style="font-size:34px;white-space:nowrap;letter-spacing:1px;background:var(--bg);border-radius:18px;padding:12px;margin:12px 0;user-select:text;-webkit-user-select:text">—</div>
+    <div id="cloudStatus" style="font-size:17px;opacity:.75;min-height:24px"></div>
+    <div class="row" style="margin-top:12px">
+      <button class="pill" id="cloudNew">✨ 새 코드 만들기</button>
+      <button class="pill" id="cloudSync">🔄 지금 맞추기</button>
+    </div>
+    <div class="row" style="margin-top:12px;align-items:center">
+      <input id="cloudInput" placeholder="다른 기기 코드 입력" autocomplete="off" autocapitalize="characters"
+        style="font-family:inherit;font-size:20px;padding:10px 14px;border-radius:14px;border:3px solid #E8D5B5;width:230px;text-transform:uppercase">
+      <button class="pill" id="cloudJoin">연결</button>
+    </div>
+    <button class="bigbtn" id="cloudClose" style="margin-top:16px">닫기</button>
+  </div>
+</div>
+
+<!-- CLEAR -->
+<div class="ov" id="clearOv">
+  <div class="card">
+    <h2 id="clearTitle">우와! 성공! 🎉</h2>
+    <div class="bigstars" id="clearStars">⭐⭐⭐</div>
+    <p id="clearText"></p>
+    <div class="row" style="margin-top:10px">
+      <button class="bigbtn" id="againBtn" style="background:var(--sky);box-shadow:0 6px 0 #5C9FDB">한 판 더!</button>
+      <button class="bigbtn" id="nextBtn">다음 단계 ▶</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="confetti"></canvas>
+
+<script>
+/* ===== 손글씨 숫자 인식 ($P 포인트 클라우드 방식, 획 순서·방향 무관) ===== */
+const REC = (()=>{
+  const N = 40;
+  // 0~100 좌표의 기본 숫자 모양 (여러 필체)
+  const BASE = {
+    1:[ [[[50,3],[50,97]]],
+        [[[32,20],[52,3],[52,97]]],
+        [[[32,20],[52,3],[52,97]],[[30,97],[74,97]]] ],
+    2:[ [[[18,25],[30,8],[50,3],[72,10],[80,28],[70,50],[20,95],[85,95]]],
+        [[[15,20],[45,3],[80,15],[78,40],[18,95],[88,92]]],
+        [[[20,30],[35,8],[62,5],[78,25],[60,55],[22,94],[52,86],[85,96]]] ],
+    3:[ [[[18,15],[45,3],[75,12],[78,32],[48,48],[78,60],[82,82],[52,97],[18,88]]],
+        [[[20,5],[78,5],[45,42],[75,52],[82,78],[55,97],[18,88]]],
+        [[[22,18],[50,4],[72,22],[45,48]],[[45,48],[78,64],[70,92],[40,97],[18,84]]] ],
+    4:[ [[[62,3],[12,66],[88,66]],[[66,30],[66,98]]],
+        [[[22,3],[18,55],[85,55]],[[68,3],[68,98]]],
+        [[[22,3],[18,55],[80,55]],[[70,3],[70,98]]] ,
+        [[[60,98],[60,5],[12,66],[88,66]]] ],
+    5:[ [[[78,4],[26,4],[22,45],[55,36],[80,55],[78,82],[50,97],[18,86]]],
+        [[[26,4],[22,45],[55,36],[80,55],[78,82],[50,97],[18,86]],[[26,4],[80,4]]],
+        [[[25,4],[25,48],[60,42],[82,65],[70,92],[35,96],[18,85]],[[25,4],[78,6]]] ],
+    6:[ [[[72,4],[40,25],[22,60],[28,90],[55,97],[78,80],[72,58],[45,50],[22,66]]],
+        [[[65,3],[30,40],[22,75],[40,97],[70,92],[78,70],[55,55],[28,70]]] ],
+    7:[ [[[15,6],[85,6],[40,97]]],
+        [[[15,20],[15,6],[85,6],[45,97]]],
+        [[[15,6],[85,6],[40,97]],[[35,50],[75,50]]] ],
+    8:[ [[[72,15],[50,3],[26,15],[30,36],[70,62],[76,85],[50,97],[24,85],[30,62],[70,36],[72,15]]],
+        [[[50,3],[25,22],[50,48],[75,72],[50,97],[25,72],[50,48],[75,22],[50,3]]] ],
+    9:[ [[[76,30],[52,4],[25,22],[34,46],[62,42],[76,28],[76,97]]],
+        [[[76,25],[50,4],[24,25],[45,50],[76,30],[70,97]]],
+        [[[76,28],[52,4],[25,22],[34,46],[62,42],[76,28],[55,97]]] ],
+  };
+  let templates = [];
+
+  function pathLen(pts){let d=0;for(let i=1;i<pts.length;i++)if(pts[i].id===pts[i-1].id)d+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);return d}
+  function resample(pts,n){
+    const I=pathLen(pts)/(n-1);let D=0;const out=[pts[0]];pts=pts.slice();
+    for(let i=1;i<pts.length;i++){
+      if(pts[i].id===pts[i-1].id){
+        const d=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);
+        if(D+d>=I && d>0){
+          const t=(I-D)/d,q={x:pts[i-1].x+t*(pts[i].x-pts[i-1].x),y:pts[i-1].y+t*(pts[i].y-pts[i-1].y),id:pts[i].id};
+          out.push(q);pts.splice(i,0,q);D=0;
+        } else D+=d;
+      }
+    }
+    while(out.length<n)out.push(pts[pts.length-1]);
+    return out.slice(0,n);
+  }
+  function normalize(strokes){
+    let pts=[];strokes.forEach((s,id)=>s.forEach(p=>pts.push({x:p[0],y:p[1],id})));
+    if(pts.length<2) return null;
+    if(pathLen(pts)===0) return null;
+    pts=resample(pts,N);
+    let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+    pts.forEach(p=>{minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y)});
+    const s=Math.max(maxX-minX,maxY-minY)||1;
+    pts=pts.map(p=>({x:(p.x-minX)/s,y:(p.y-minY)/s,id:p.id}));
+    let cx=0,cy=0;pts.forEach(p=>{cx+=p.x;cy+=p.y});cx/=N;cy/=N;
+    return {pts:pts.map(p=>({x:p.x-cx,y:p.y-cy})), aspect:(maxX-minX)/((maxY-minY)||1)};
+  }
+  function cloudDist(a,b,start){
+    const m=new Array(N).fill(false);let sum=0,i=start;
+    do{
+      let min=1e9,idx=-1;
+      for(let j=0;j<N;j++)if(!m[j]){const d=Math.hypot(a[i].x-b[j].x,a[i].y-b[j].y);if(d<min){min=d;idx=j}}
+      m[idx]=true;const w=1-((i-start+N)%N)/N;sum+=w*min;i=(i+1)%N;
+    }while(i!==start);
+    return sum;
+  }
+  function greedy(a,b){
+    const step=Math.floor(Math.sqrt(N));let min=1e9;
+    for(let i=0;i<N;i+=step)min=Math.min(min,cloudDist(a,b,i),cloudDist(b,a,i));
+    return min;
+  }
+  function add(digit,strokes,user=false){const n=normalize(strokes);if(n)templates.push({d:+digit,...n,user})}
+  function init(userSamples){
+    templates=[];
+    for(const d in BASE)BASE[d].forEach(v=>add(d,v));
+    (userSamples||[]).forEach(s=>add(s.d,s.strokes,true));
+  }
+  // allowed: 허용 숫자 배열. 결과: [{d,score}] 좋은 순
+  function recognize(strokes,allowed){
+    const c=normalize(strokes);if(!c)return [];
+    const best={};
+    for(const t of templates){
+      if(allowed&&!allowed.includes(t.d))continue;
+      let dist=greedy(c.pts,t.pts);
+      // 가늘고 긴 모양(1)과 넓은 모양 구분 보정
+      const thinC=c.aspect<0.3, thinT=t.aspect<0.3;
+      if(thinC!==thinT)dist*=1.6;
+      if(best[t.d]===undefined||dist<best[t.d])best[t.d]=dist;
+    }
+    return Object.entries(best).map(([d,s])=>({d:+d,score:s})).sort((a,b)=>a.score-b.score);
+  }
+  init();
+  return {init,recognize,add,BASE};
+})();
+
+/* ================= 데이터 ================= */
+const THEMES = {
+  animal:{name:'🐶 동물', items:['🐶','🐱','🐰','🐻','🐼','🦊']},
+  fruit: {name:'🍎 과일', items:['🍎','🍌','🍇','🍓','🍊','🍉']},
+  car:   {name:'🚗 탈것', items:['🚗','🚌','🚒','🚀','✈️','🚂']},
+  color: {name:'🎨 색깔', items:['#FF5A5F','#FFC23D','#3BB273','#3A86FF','#B565F2','#FF8C42'], color:true},
+  number:{name:'🔢 숫자', items:['1','2','3','4','5','6'], number:true},
+};
+// size, boxR, boxC, 빈칸 수, 이름
+const LEVELS = [
+  {n:4,br:2,bc:2,holes:5, name:'아기 단계', col:'#7ED6B5'},
+  {n:4,br:2,bc:2,holes:8, name:'쑥쑥 단계', col:'#5EC4A0'},
+  {n:4,br:2,bc:2,holes:11,name:'척척 단계', col:'#3DA882'},
+  {n:6,br:2,bc:3,holes:12,name:'도전 단계', col:'#8CC8FF'},
+  {n:6,br:2,bc:3,holes:18,name:'용사 단계', col:'#5EA8F0'},
+  {n:6,br:2,bc:3,holes:24,name:'박사 단계', col:'#B565F2'},
+];
+const NUMCOL = ['#E07A5F','#3D9970','#4A90D9','#D9A92E','#B565F2','#FF8C42'];
+
+/* ================= 저장 ================= */
+const store = {
+  get(k,d){try{const v=localStorage.getItem('suhoSudoku_'+k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem('suhoSudoku_'+k,JSON.stringify(v))}catch(e){}
+    if((k==='progress'||k==='samples')&&typeof Cloud!=='undefined')Cloud.schedule();}
+};
+let progress = store.get('progress',{stars:[0,0,0,0,0,0],total:0});
+let theme = store.get('theme','animal');
+let soundOn = store.get('sound',true);
+let helper = true;
+
+/* ================= 소리 ================= */
+let actx=null;
+function beep(freqs,dur=0.12,type='sine',gap=0.09){
+  if(!soundOn) return;
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    freqs.forEach((f,i)=>{
+      const o=actx.createOscillator(),g=actx.createGain();
+      o.type=type;o.frequency.value=f;
+      const t=actx.currentTime+i*gap;
+      g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.25,t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+dur+0.02);
+    });
+  }catch(e){}
+}
+const sfx={
+  tap:()=>beep([660],0.08),
+  put:()=>beep([523,784],0.12),
+  bad:()=>beep([220,180],0.18,'triangle',0.12),
+  hint:()=>beep([880,1046,1318],0.12),
+  win:()=>beep([523,659,784,1046,784,1046],0.18,'sine',0.13),
+};
+
+/* ================= 문제 만들기 ================= */
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
+function canPlace(g,n,br,bc,r,c,v){
+  for(let i=0;i<n;i++){if(g[r][i]===v||g[i][c]===v)return false}
+  const r0=r-r%br,c0=c-c%bc;
+  for(let i=0;i<br;i++)for(let j=0;j<bc;j++)if(g[r0+i][c0+j]===v)return false;
+  return true;
+}
+function fill(g,n,br,bc){
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(g[r][c]===0){
+    for(const v of shuffle([...Array(n)].map((_,i)=>i+1))){
+      if(canPlace(g,n,br,bc,r,c,v)){g[r][c]=v;if(fill(g,n,br,bc))return true;g[r][c]=0}
+    }
+    return false;
+  }
+  return true;
+}
+function countSol(g,n,br,bc,limit=2){
+  let cnt=0;
+  (function rec(){
+    if(cnt>=limit)return;
+    for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(g[r][c]===0){
+      for(let v=1;v<=n;v++)if(canPlace(g,n,br,bc,r,c,v)){g[r][c]=v;rec();g[r][c]=0;if(cnt>=limit)return}
+      return;
+    }
+    cnt++;
+  })();
+  return cnt;
+}
+function makePuzzle(L){
+  const {n,br,bc}=L;
+  const sol=[...Array(n)].map(()=>Array(n).fill(0));
+  fill(sol,n,br,bc);
+  const puz=sol.map(r=>[...r]);
+  let removed=0;
+  for(const k of shuffle([...Array(n*n).keys()])){
+    if(removed>=L.holes)break;
+    const r=k/n|0,c=k%n,keep=puz[r][c];
+    puz[r][c]=0;
+    if(countSol(puz.map(x=>[...x]),n,br,bc)!==1){puz[r][c]=keep}else removed++;
+  }
+  return {sol,puz};
+}
+
+/* ================= 화면 ================= */
+const $=id=>document.getElementById(id);
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id))}
+
+function pieceHTML(v,size){
+  const T=THEMES[theme];
+  if(!v) return '';
+  if(T.color) return `<div class="colordot" style="background:${T.items[v-1]}"></div>`;
+  if(T.number) return `<span class="numtxt" style="font-size:${size*0.62}px;color:${NUMCOL[v-1]}">${v}</span>`;
+  return `<span style="font-size:${size*0.62}px">${T.items[v-1]}</span>`;
+}
+
+function renderHome(){
+  $('stampBox').textContent = `⭐ 모은 별 ${progress.total}개`;
+  const tr=$('themeRow');tr.innerHTML='';
+  Object.entries(THEMES).forEach(([k,t])=>{
+    const b=document.createElement('button');
+    b.className='pill'+(k===theme?' sel':'');b.textContent=t.name;
+    b.onclick=()=>{theme=k;store.set('theme',k);sfx.tap();renderHome()};
+    tr.appendChild(b);
+  });
+  const lv=$('levels');lv.innerHTML='';
+  LEVELS.forEach((L,i)=>{
+    const unlocked = i===0 || progress.stars[i-1]>0;
+    const b=document.createElement('button');
+    b.className='lv'+(unlocked?'':' locked');
+    const s=progress.stars[i];
+    b.innerHTML=`<div class="num" style="background:${L.col}">${unlocked?i+1:'🔒'}</div>
+      <div>${L.name}</div><div class="size">${L.n}×${L.n} 판</div>
+      <div class="stars">${s?'⭐'.repeat(s)+'☆'.repeat(3-s):''}</div>`;
+    b.onclick=()=>{ if(!unlocked){sfx.bad();b.animate([{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'none'}],{duration:300});return}
+      sfx.tap();startLevel(i)};
+    lv.appendChild(b);
+  });
+  $('soundBtn').textContent = soundOn?'🔊 소리 켜짐':'🔈 소리 꺼짐';
+}
+
+/* ================= 게임 상태 ================= */
+let G=null;
+function startLevel(i){
+  const L=LEVELS[i];
+  const {sol,puz}=makePuzzle(L);
+  if(typeof hidePicker==='function'){hidePicker();ink=null;}
+  G={i,L,sol,puz,cur:puz.map(r=>[...r]),selected:null,focus:null,hints:3,mistakes:0,hintsUsed:0,history:[]};
+  $('gTitle').textContent=`${i+1}단계 · ${L.name}`;
+  $('msg').textContent='친구를 골라서 빈 칸에 놓아 봐!';
+  show('game');renderGame();
+}
+
+function layout(){
+  const n=G.L.n, W=window.innerWidth, H=window.innerHeight;
+  const land=W>H, phone=Math.min(W,H)<600;
+  const pad=phone?8:16, topH=phone?58:82, frame=2*pad+10, gap=phone?8:12, tpad=phone?10:16;
+  let sz,tsz,cols,sideW;
+  if(land){
+    sideW = phone?Math.min(250,W*0.36):Math.min(320,W*0.3);
+    cols  = phone?4:(n===4?3:3);
+    tsz   = Math.min(phone?60:92,Math.floor((sideW-2*tpad-4-(cols-1)*gap)/cols));
+    sz    = Math.floor(Math.min(H-topH-frame-(phone?16:40), W-sideW-(phone?40:80)-frame)/n);
+  }else{
+    sideW = Math.min(W-24, 760);
+    cols  = (phone && n===6) ? 4 : n+1;
+    tsz   = Math.min(phone?64:92,Math.floor((sideW-2*tpad-4-(cols-1)*gap)/cols));
+    const rows=Math.ceil((n+1)/cols);
+    const below = rows*tsz+(rows-1)*gap + 24 + (phone?52:70) + 40 + (phone?0:50);   // 말 줄 + 버튼 + 메시지 + 펜 안내
+    sz    = Math.floor(Math.min(W-(phone?20:80)-frame, H-topH-frame-below-(phone?20:40))/n);
+  }
+  sz=Math.max(38,Math.min(n===4?150:110,sz));
+  return {sz,tsz,cols,sideW,land,phone,pad,gap,tpad};
+}
+function cellSize(){return layout().sz}
+
+function renderGame(){
+  const {n,br,bc}=G.L, sz=cellSize();
+  const bd=$('board');
+  bd.style.gridTemplateColumns=`repeat(${n},${sz}px)`;
+  bd.innerHTML='';
+  const sel=G.selected;
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++){
+    const d=document.createElement('div');
+    const v=G.cur[r][c], given=G.puz[r][c]!==0;
+    d.className='cell'+(given?' given':'');
+    if((c+1)%bc===0&&c<n-1)d.classList.add('bR');
+    if((r+1)%br===0&&r<n-1)d.classList.add('bB');
+    if(helper&&sel&&v===sel)d.classList.add('hl');
+    if(helper&&v&&!given&&conflict(r,c,v))d.classList.add('bad');
+    d.style.width=d.style.height=sz+'px';
+    d.innerHTML = v?`<div class="piece ${given?'':'user'}">${pieceHTML(v,sz)}</div>`:'';
+    d.dataset.r=r;d.dataset.c=c;
+    bd.appendChild(d);
+  }
+  // tray
+  const tr=$('tray'), LY=layout();
+  const {cols,tsz}=LY;
+  document.body.classList.toggle('phone',LY.phone);
+  document.body.classList.toggle('land',LY.land);
+  $('side').style.width=LY.sideW+'px';
+  document.querySelector('#game .boardwrap').style.padding=LY.pad+'px';
+  tr.style.gridTemplateColumns=`repeat(${cols},${tsz}px)`;
+  tr.style.setProperty('--t',tsz+'px');
+  tr.style.gap=LY.gap+'px';tr.style.padding=LY.tpad+'px';
+  tr.innerHTML='';
+  for(let v=1;v<=n;v++){
+    const used=G.cur.flat().filter(x=>x===v).length;
+    const b=document.createElement('button');
+    b.className='tp'+(sel===v?' sel':'')+(used>=n?' done':'');
+    b.innerHTML=pieceHTML(v,tsz)+`<span class="cnt">${n-used}</span>`;
+    b.onclick=()=>{G.selected = G.selected===v?null:v; sfx.tap();
+      if(G.focus){const [fr,fc]=G.focus;G.focus=null;place(fr,fc,v);return}
+      renderGame()};
+    tr.appendChild(b);
+  }
+  const er=document.createElement('button');
+  er.className='tp erase'+(sel===0?' sel':'');er.textContent='🧽';
+  er.onclick=()=>{G.selected=G.selected===0?null:0;sfx.tap();renderGame()};
+  tr.appendChild(er);
+
+  $('hintLeft').textContent=G.hints;
+  $('hintBtn').disabled=G.hints<=0;
+  $('undoBtn').disabled=!G.history.length;
+  $('helpBtn').innerHTML=helper?'👀<span class="lt"> 도우미 켜짐</span>':'🙈<span class="lt"> 도우미 꺼짐</span>';
+  if(G.focus){const el=bd.children[G.focus[0]*n+G.focus[1]];el&&el.classList.add('focus')}
+  const isNum=!!THEMES[theme].number;
+  $('penTip').classList.toggle('on',isNum);
+  $('fingerBtn').style.display=isNum?'':'none';
+  $('fingerBtn').innerHTML=(fingerWrite?'☝️':'🖊️')+'<span class="lt"> '+(fingerWrite?'손가락 쓰기 켜짐':'펜으로만 쓰기')+'</span>';
+  sizeInk();
+}
+
+function conflict(r,c,v){
+  const {n,br,bc}=G.L;
+  for(let i=0;i<n;i++){if(i!==c&&G.cur[r][i]===v)return true;if(i!==r&&G.cur[i][c]===v)return true}
+  const r0=r-r%br,c0=c-c%bc;
+  for(let i=0;i<br;i++)for(let j=0;j<bc;j++){const rr=r0+i,cc=c0+j;if((rr!==r||cc!==c)&&G.cur[rr][cc]===v)return true}
+  return false;
+}
+
+function onCell(r,c){
+  if(G.puz[r][c]!==0){ // 처음부터 있던 칸 → 그 친구 선택
+    G.selected=G.cur[r][c];G.focus=null;sfx.tap();renderGame();return;
+  }
+  if(G.selected===0 || (G.cur[r][c] && G.selected==null) || (G.cur[r][c] && G.cur[r][c]===G.selected)){
+    if(G.cur[r][c]){G.history.push([r,c,G.cur[r][c]]);G.cur[r][c]=0;sfx.tap();say('쏙! 빼냈어.');}
+    renderGame();return;
+  }
+  if(G.selected==null){G.focus=[r,c];sfx.tap();say('이 칸에 들어갈 친구를 골라 봐!');renderGame();return}
+  place(r,c,G.selected);
+}
+
+function place(r,c,v){
+  G.history.push([r,c,G.cur[r][c]]);
+  G.cur[r][c]=v;
+  const bad=conflict(r,c,v);
+  if(bad){G.mistakes++;sfx.bad();say(helper?'앗! 같은 친구가 줄이나 방에 또 있어요 🤔':'');}
+  else {sfx.put();say(['좋아요! 👍','멋져요! ✨','잘했어! 😄','최고야! 🌟'][Math.random()*4|0]);}
+  renderGame();
+  const el=$('board').children[r*G.L.n+c]; if(el&&!bad)el.classList.add('ok');
+  checkWin();
+}
+
+function say(t){$('msg').textContent=t}
+
+function checkWin(){
+  const {n}=G.L;
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(G.cur[r][c]!==G.sol[r][c]){
+    if(G.cur.flat().every(x=>x)) say('다 채웠는데 빨간 칸이 있어요. 다시 살펴볼까? 🔍');
+    return;
+  }
+  // 성공!
+  const pen=G.mistakes+G.hintsUsed;
+  const stars = pen===0?3:pen<=2?2:1;
+  const old=progress.stars[G.i];
+  if(stars>old){progress.total+=stars-old;progress.stars[G.i]=stars;store.set('progress',progress)}
+  setTimeout(()=>{
+    sfx.win();confetti();
+    $('clearStars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
+    $('clearTitle').textContent=['','잘했어요! 🎉','훌륭해요! 🎉','완벽해요!! 🏆'][stars];
+    $('clearText').textContent = stars===3?'실수 없이 혼자 다 풀었어요! 수호 최고!':
+      `실수 ${G.mistakes}번, 힌트 ${G.hintsUsed}번 썼어요. 다음엔 별 3개 도전!`;
+    $('nextBtn').style.display = G.i<LEVELS.length-1?'':'none';
+    $('clearOv').classList.add('on');
+  },450);
+}
+
+/* ================= 버튼 ================= */
+$('hintBtn').onclick=()=>{
+  if(G.hints<=0)return;
+  const {n}=G.L;const cand=[];
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(G.cur[r][c]!==G.sol[r][c])cand.push([r,c]);
+  if(!cand.length)return;
+  // 빈칸 중 후보가 가장 적은(가장 쉬운) 칸을 우선
+  const [r,c]=cand[Math.random()*cand.length|0];
+  G.history.push([r,c,G.cur[r][c]]);
+  G.cur[r][c]=G.sol[r][c];G.hints--;G.hintsUsed++;sfx.hint();
+  say('💡 여기에는 이 친구가 들어가요!');
+  renderGame();$('board').children[r*n+c].classList.add('hint');
+  checkWin();
+};
+$('undoBtn').onclick=()=>{const h=G.history.pop();if(!h)return;G.cur[h[0]][h[1]]=h[2];sfx.tap();say('되돌렸어요.');renderGame()};
+$('helpBtn').onclick=()=>{helper=!helper;sfx.tap();renderGame()};
+$('backBtn').onclick=()=>{sfx.tap();renderHome();show('home')};
+$('newBtn').onclick=()=>{sfx.tap();startLevel(G.i)};
+$('againBtn').onclick=()=>{$('clearOv').classList.remove('on');startLevel(G.i)};
+$('nextBtn').onclick=()=>{$('clearOv').classList.remove('on');startLevel(Math.min(G.i+1,LEVELS.length-1))};
+$('howBtn').onclick=()=>{sfx.tap();$('howOv').classList.add('on')};
+$('howClose').onclick=()=>{sfx.tap();$('howOv').classList.remove('on');store.set('seenHow',true)};
+$('soundBtn').onclick=()=>{soundOn=!soundOn;store.set('sound',soundOn);renderHome();sfx.tap()};
+window.addEventListener('resize',()=>{if(G&&$('game').classList.contains('on'))renderGame()});
+
+/* ================= 펜 쓰기 (게임판) ================= */
+let fingerWrite = store.get('fingerWrite',false);
+let userSamples = store.get('samples',[]);
+REC.init(userSamples);
+let lastPen = 0;           // 마지막 펜 사용 시각 (손바닥 무시용)
+let ink = null;            // {r,c,strokes,cur,timer}
+let tapStart = null;
+
+function sizeInk(){
+  const cv=$('ink'),bd=$('board'),dpr=window.devicePixelRatio||1;
+  const w=bd.offsetWidth,h=bd.offsetHeight;
+  cv.style.width=w+'px';cv.style.height=h+'px';
+  cv.width=w*dpr;cv.height=h*dpr;
+  const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function inkCtx(){const ctx=$('ink').getContext('2d');ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#2B6CB0';ctx.lineWidth=Math.max(5,cellSize()/18);return ctx}
+function clearInk(){const cv=$('ink');cv.getContext('2d').clearRect(0,0,cv.width,cv.height)}
+function boardXY(e){const r=$('board').getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top]}
+function cellAt(e){const el=document.elementFromPoint(e.clientX,e.clientY);const c=el&&el.closest('.cell');return c?[+c.dataset.r,+c.dataset.c,c]:null}
+function canWrite(e){
+  if(!THEMES[theme].number) return false;
+  return e.pointerType==='pen' || (fingerWrite && e.pointerType!=='pen');
+}
+
+const bw=$('bwrap');
+bw.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='pen') lastPen=Date.now();
+  else if(e.pointerType==='touch' && Date.now()-lastPen<1500) return; // 펜 쓰는 중 손바닥 무시
+  hidePicker();
+  const hit=cellAt(e); if(!hit) return;
+  const [r,c,el]=hit;
+  if(canWrite(e) && G.puz[r][c]===0){
+    e.preventDefault();
+    if(ink && (ink.r!==r||ink.c!==c)) finishInk();
+    if(!ink){ink={r,c,strokes:[],el};el.classList.add('writing')}
+    clearTimeout(ink.timer);
+    ink.cur=[boardXY(e)];ink.strokes.push(ink.cur);ink.pid=e.pointerId;
+    try{bw.setPointerCapture(e.pointerId)}catch(_){}
+    return;
+  }
+  tapStart={x:e.clientX,y:e.clientY,r,c,pid:e.pointerId};
+});
+bw.addEventListener('pointermove',e=>{
+  if(e.pointerType==='pen') lastPen=Date.now();
+  if(!ink||!ink.cur||e.pointerId!==ink.pid) return;
+  let evs=e.getCoalescedEvents?e.getCoalescedEvents():[];if(!evs.length)evs=[e];
+  const ctx=inkCtx();
+  for(const ev of evs){
+    const p=boardXY(ev),q=ink.cur[ink.cur.length-1];
+    ctx.beginPath();ctx.moveTo(q[0],q[1]);ctx.lineTo(p[0],p[1]);ctx.stroke();
+    ink.cur.push(p);
+  }
+});
+function endPointer(e){
+  if(ink&&ink.cur&&e.pointerId===ink.pid){
+    ink.cur=null;clearTimeout(ink.timer);
+    ink.timer=setTimeout(finishInk, 750);   // 잠깐 멈추면 인식
+    return;
+  }
+  if(tapStart&&e.pointerId===tapStart.pid){
+    const moved=Math.hypot(e.clientX-tapStart.x,e.clientY-tapStart.y);
+    const {r,c}=tapStart;tapStart=null;
+    if(moved<14) onCell(r,c);
+  }
+}
+bw.addEventListener('pointerup',endPointer);
+bw.addEventListener('pointercancel',e=>{if(ink&&e.pointerId===ink.pid){ink.cur=null;ink.timer=setTimeout(finishInk,750)}tapStart=null});
+
+function strokesLen(st){let d=0;st.forEach(s=>{for(let i=1;i<s.length;i++)d+=Math.hypot(s[i][0]-s[i-1][0],s[i][1]-s[i-1][1])});return d}
+
+function finishInk(){
+  if(!ink) return;
+  const {r,c,strokes,el}=ink; clearTimeout(ink.timer); ink=null;
+  el&&el.classList.remove('writing');
+  clearInk();
+  if(strokesLen(strokes) < cellSize()*0.15){ onCell(r,c); return; }   // 펜으로 톡 = 누르기
+  const n=G.L.n, allowed=[...Array(n)].map((_,i)=>i+1);
+  const res=REC.recognize(strokes,allowed);
+  if(!res.length) return;
+  const sure = res[0].score<2.3 && (!res[1] || res[1].score/res[0].score>=1.15);
+  if(sure){ place(r,c,res[0].d); }
+  else showPicker(r,c,res.slice(0,3).map(x=>x.d));
+}
+
+function showPicker(r,c,cands){
+  const pk=$('picker'),cell=$('board').children[r*G.L.n+c];
+  pk.innerHTML='<span class="q">어떤 숫자야?</span>'+cands.map(d=>`<button data-d="${d}" style="color:${NUMCOL[d-1]}">${d}</button>`).join('')+'<button class="x">✖</button>';
+  pk.querySelectorAll('button').forEach(b=>b.onclick=()=>{hidePicker();if(b.dataset.d){place(r,c,+b.dataset.d)}else sfx.tap()});
+  pk.classList.add('on');
+  const cr=cell.getBoundingClientRect(),pr=pk.getBoundingClientRect();
+  let x=cr.left+cr.width/2-pr.width/2, y=cr.top-pr.height-10;
+  if(y<8) y=cr.bottom+10;
+  x=Math.max(8,Math.min(window.innerWidth-pr.width-8,x));
+  pk.style.left=x+'px';pk.style.top=y+'px';
+  beep([600,500],0.1);
+  say('잘 모르겠어요. 어떤 숫자인지 골라 줄래? 🙂');
+}
+function hidePicker(){$('picker').classList.remove('on')}
+
+$('fingerBtn').onclick=()=>{fingerWrite=!fingerWrite;store.set('fingerWrite',fingerWrite);sfx.tap();renderGame()};
+
+/* ================= 펜 연습장 ================= */
+let padDigit=1, padStrokes=[], padCur=null, padPid=null;
+const pad=$('pad');
+function sizePad(){
+  const s=Math.min(window.innerWidth-(window.innerWidth<600?32:60), window.innerHeight-(window.innerWidth<600?360:420), 520);
+  const dpr=window.devicePixelRatio||1;
+  pad.style.width=pad.style.height=Math.max(240,s)+'px';
+  pad.width=pad.height=Math.max(240,s)*dpr;
+  pad.getContext('2d').setTransform(dpr,0,0,dpr,0,0);
+  redrawPad();
+}
+function redrawPad(){
+  const ctx=pad.getContext('2d'),w=pad.offsetWidth;
+  ctx.clearRect(0,0,w,w);
+  ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#2B6CB0';ctx.lineWidth=Math.max(8,w/40);
+  padStrokes.forEach(s=>{ctx.beginPath();s.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke()});
+}
+function renderDigits(){
+  const cnt=d=>userSamples.filter(s=>s.d===d).length;
+  $('digits').innerHTML=[1,2,3,4,5,6,7,8,9].map(d=>`<button data-d="${d}" class="${d===padDigit?'sel':''}" style="color:${NUMCOL[(d-1)%6]}">${d}${cnt(d)?`<small>${cnt(d)}</small>`:''}</button>`).join('');
+  $('digits').querySelectorAll('button').forEach(b=>b.onclick=()=>{padDigit=+b.dataset.d;sfx.tap();renderDigits();$('padMsg').textContent=`숫자 ${padDigit}을(를) 크게 써 보세요!`});
+}
+function padXY(e){const r=pad.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top]}
+pad.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='pen') lastPen=Date.now();
+  else if(e.pointerType==='touch'&&Date.now()-lastPen<1500) return;
+  e.preventDefault();padCur=[padXY(e)];padStrokes.push(padCur);padPid=e.pointerId;
+  try{pad.setPointerCapture(e.pointerId)}catch(_){}
+});
+pad.addEventListener('pointermove',e=>{
+  if(e.pointerType==='pen') lastPen=Date.now();
+  if(!padCur||e.pointerId!==padPid)return;
+  const ctx=pad.getContext('2d');ctx.lineCap='round';ctx.strokeStyle='#2B6CB0';ctx.lineWidth=Math.max(8,pad.offsetWidth/40);
+  let evs=e.getCoalescedEvents?e.getCoalescedEvents():[];if(!evs.length)evs=[e];
+  for(const ev of evs){
+    const p=padXY(ev),q=padCur[padCur.length-1];ctx.beginPath();ctx.moveTo(q[0],q[1]);ctx.lineTo(p[0],p[1]);ctx.stroke();padCur.push(p);
+  }
+});
+['pointerup','pointercancel'].forEach(t=>pad.addEventListener(t,e=>{if(e.pointerId===padPid)padCur=null}));
+$('padClear').onclick=()=>{padStrokes=[];redrawPad();$('guess').textContent='';sfx.tap()};
+$('padSave').onclick=()=>{
+  if(strokesLen(padStrokes)<30){$('padMsg').textContent='먼저 숫자를 써 주세요 ✍️';return}
+  userSamples.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),t:Date.now(),d:padDigit,strokes:padStrokes.map(s=>s.map(p=>[Math.round(p[0]),Math.round(p[1])]))});
+  const mine=userSamples.filter(s=>s.d===padDigit); // 숫자마다 최근 6개만
+  if(mine.length>6) userSamples.splice(userSamples.indexOf(mine[0]),1);
+  store.set('samples',userSamples);REC.init(userSamples);
+  sfx.put();$('padMsg').textContent=`숫자 ${padDigit} 모양을 기억했어요! 👍`;
+  padStrokes=[];redrawPad();renderDigits();
+};
+$('padTest').onclick=()=>{
+  if(strokesLen(padStrokes)<30){$('padMsg').textContent='숫자를 쓰고 눌러 주세요 ✍️';return}
+  const res=REC.recognize(padStrokes,[1,2,3,4,5,6,7,8,9]);
+  const d=res[0].d;
+  $('guess').innerHTML=`<span style="color:${NUMCOL[(d-1)%6]}">${d}</span>`;
+  $('padMsg').textContent = d===padDigit?'정답! 잘 알아봤어요 🎉':`${d}(으)로 보였어요. 맞으면 숫자 ${d}를 골라서 저장해 줘요.`;
+  sfx.hint();
+};
+$('padReset').onclick=()=>{
+  if($('padReset').dataset.sure!=='1'){$('padReset').dataset.sure='1';$('padReset').textContent='🗑️ 정말 지울까요?';setTimeout(()=>{$('padReset').dataset.sure='';$('padReset').textContent='🗑️ 기억 지우기'},3000);return}
+  userSamples=[];store.set('resetAt',Date.now());store.set('samples',[]);REC.init([]);renderDigits();$('padMsg').textContent='기억한 글씨를 모두 지웠어요.';
+  $('padReset').dataset.sure='';$('padReset').textContent='🗑️ 기억 지우기';
+};
+$('padBtn').onclick=()=>{sfx.tap();show('practice');padStrokes=[];renderDigits();sizePad();$('guess').textContent='';$('padMsg').textContent=`숫자 ${padDigit}을(를) 크게 써 보세요!`};
+$('padBack').onclick=()=>{sfx.tap();renderHome();show('home')};
+window.addEventListener('resize',()=>{if($('practice').classList.contains('on'))sizePad()});
+
+/* ================= 전체 화면 ================= */
+$('fsPill').onclick=()=>$('fsBtn').onclick();
+$('fsBtn').onclick=async()=>{
+  try{
+    if(document.fullscreenElement) await document.exitFullscreen();
+    else{ await document.documentElement.requestFullscreen({navigationUI:'hide'}); }
+  }catch(e){ $('fsBtn').style.display='none';$('fsPill').style.display='none' }
+};
+document.addEventListener('fullscreenchange',()=>{$('fsBtn').textContent=document.fullscreenElement?'🗗':'⛶';setTimeout(()=>{if(G&&$('game').classList.contains('on'))renderGame()},300)});
+document.addEventListener('contextmenu',e=>e.preventDefault());
+
+/* ================= 꽃가루 ================= */
+function confetti(){
+  const cv=$('confetti'),ctx=cv.getContext('2d');
+  cv.width=innerWidth;cv.height=innerHeight;
+  const cols=['#FF5A5F','#FFC23D','#3BB273','#3A86FF','#B565F2','#FF8C42'];
+  const ps=[...Array(140)].map(()=>({x:Math.random()*cv.width,y:-20-Math.random()*cv.height*.5,
+    vx:(Math.random()-.5)*4,vy:2+Math.random()*4,s:6+Math.random()*8,a:Math.random()*6,va:(Math.random()-.5)*.3,c:cols[Math.random()*6|0]}));
+  let t=0;
+  (function f(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.05;p.a+=p.va;
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a);ctx.fillStyle=p.c;ctx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);ctx.restore()});
+    if(++t<220)requestAnimationFrame(f);else ctx.clearRect(0,0,cv.width,cv.height);
+  })();
+}
+
+function devClass(){const W=innerWidth,H=innerHeight;document.body.classList.toggle('phone',Math.min(W,H)<600);document.body.classList.toggle('land',W>H)}
+
+/* ================= ☁️ 이어하기 (Supabase) =================
+   CLOUD_URL / CLOUD_KEY 가 비어 있으면 이 기기에만 저장돼요.
+   키는 Supabase 의 anon(publishable) 키 — 테이블은 RLS 로 잠겨 있고
+   sudoku_load / sudoku_save 함수로만 접근하므로 공개돼도 괜찮아요. */
+const CLOUD_URL = '';
+const CLOUD_KEY = '';
+const Cloud = (()=>{
+  const ALPHA='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = store.get('syncCode','');
+  let timer=null, busy=false, lastOk=store.get('syncAt',0);
+  const enabled=()=>!!(CLOUD_URL&&CLOUD_KEY);
+  function newCode(){let c='';const a=new Uint32Array(8);crypto.getRandomValues(a);a.forEach(v=>c+=ALPHA[v%32]);return 'SUHO-'+c.slice(0,4)+'-'+c.slice(4)}
+  function norm(c){c=(c||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(c.startsWith('SUHO'))c=c.slice(4);return c.length===8?'SUHO-'+c.slice(0,4)+'-'+c.slice(4):''}
+  async function rpc(fn,body){
+    const r=await fetch(CLOUD_URL.replace(/\/$/,'')+'/rest/v1/rpc/'+fn,{method:'POST',
+      headers:{'Content-Type':'application/json',apikey:CLOUD_KEY,Authorization:'Bearer '+CLOUD_KEY},body:JSON.stringify(body)});
+    if(!r.ok) throw new Error(r.status+' '+await r.text());
+    const t=await r.text();return t?JSON.parse(t):null;
+  }
+  function local(){
+    userSamples.forEach(s=>{if(!s.id){s.id='o'+Math.random().toString(36).slice(2,9);s.t=s.t||1}});
+    return {v:1,progress,samples:userSamples,resetAt:store.get('resetAt',0)};
+  }
+  function merge(a,b){
+    if(!b) return a;
+    const stars=LEVELS.map((_,i)=>Math.max((a.progress.stars||[])[i]||0,((b.progress||{}).stars||[])[i]||0));
+    const resetAt=Math.max(a.resetAt||0,b.resetAt||0);
+    const byId={};[...(a.samples||[]),...(b.samples||[])].forEach(s=>{if(s&&s.id&&(s.t||0)>resetAt)byId[s.id]=s});
+    let samples=Object.values(byId).sort((x,y)=>(y.t||0)-(x.t||0));
+    const cnt={};samples=samples.filter(s=>(cnt[s.d]=(cnt[s.d]||0)+1)<=6);
+    return {v:1,progress:{stars,total:stars.reduce((x,y)=>x+y,0)},samples,resetAt};
+  }
+  function apply(m){
+    progress=m.progress;userSamples=m.samples;
+    try{localStorage.setItem('suhoSudoku_progress',JSON.stringify(progress));localStorage.setItem('suhoSudoku_samples',JSON.stringify(userSamples));localStorage.setItem('suhoSudoku_resetAt',JSON.stringify(m.resetAt))}catch(e){}
+    REC.init(userSamples);
+    if($('home').classList.contains('on'))renderHome();
+    if($('practice').classList.contains('on'))renderDigits();
+  }
+  async function sync(){
+    if(!enabled()||!code||busy) return false;
+    busy=true;status('맞추는 중…');
+    try{
+      const remote=await rpc('sudoku_load',{p_code:code});
+      const m=merge(local(),remote);
+      apply(m);
+      await rpc('sudoku_save',{p_code:code,p_data:m});
+      lastOk=Date.now();try{localStorage.setItem('suhoSudoku_syncAt',lastOk)}catch(e){}
+      status('✅ 맞췄어요 ('+new Date(lastOk).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})+')');
+      return true;
+    }catch(e){status('📴 인터넷이 안 돼서 이 기기에만 저장했어요');return false}
+    finally{busy=false;badge()}
+  }
+  function schedule(){if(!enabled()||!code)return;clearTimeout(timer);timer=setTimeout(sync,1500)}
+  function status(t){const el=$('cloudStatus');if(el)el.textContent=t}
+  function badge(){const b=$('cloudBtn');if(b)b.textContent=!enabled()?'☁️ 이어하기':code?'☁️ 이어하기 켜짐':'☁️ 이어하기'}
+  function open(){
+    $('cloudCodeBox').textContent=code||'아직 코드가 없어요';
+    $('cloudCodeBox').style.fontSize=code?'clamp(22px,7.5vw,34px)':'20px';
+    if(!enabled()) status('⚙️ 아직 서버가 연결되지 않은 버전이에요 (이 기기에만 저장)');
+    else status(code?(lastOk?'마지막으로 맞춘 시각: '+new Date(lastOk).toLocaleString('ko-KR'):''):'처음이면 "새 코드 만들기"를 눌러요');
+    $('cloudOv').classList.add('on');
+  }
+  $('cloudBtn').onclick=()=>{sfx.tap();open()};
+  $('cloudClose').onclick=()=>{sfx.tap();$('cloudOv').classList.remove('on')};
+  $('cloudNew').onclick=async()=>{
+    if(!enabled()){status('⚙️ 서버 연결 후에 쓸 수 있어요');return}
+    if(code&&$('cloudNew').dataset.sure!=='1'){$('cloudNew').dataset.sure='1';$('cloudNew').textContent='정말 바꿀까요?';setTimeout(()=>{$('cloudNew').dataset.sure='';$('cloudNew').textContent='✨ 새 코드 만들기'},3000);return}
+    $('cloudNew').dataset.sure='';$('cloudNew').textContent='✨ 새 코드 만들기';
+    code=newCode();store.set('syncCode',code);$('cloudCodeBox').textContent=code;$('cloudCodeBox').style.fontSize='clamp(22px,7.5vw,34px)';sfx.put();await sync();
+  };
+  $('cloudJoin').onclick=async()=>{
+    if(!enabled()){status('⚙️ 서버 연결 후에 쓸 수 있어요');return}
+    const c=norm($('cloudInput').value);
+    if(!c){status('코드는 SUHO-XXXX-XXXX 모양이에요');sfx.bad();return}
+    code=c;store.set('syncCode',code);$('cloudCodeBox').textContent=code;$('cloudCodeBox').style.fontSize='clamp(22px,7.5vw,34px)';$('cloudInput').value='';
+    sfx.put();await sync();
+  };
+  $('cloudSync').onclick=()=>{sfx.tap();if(!enabled())status('⚙️ 서버 연결 후에 쓸 수 있어요');else if(!code)status('먼저 코드를 만들거나 입력해 주세요');else sync()};
+  window.addEventListener('online',schedule);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')schedule()});
+  badge();
+  if(enabled()&&code) setTimeout(sync,800);
+  return {schedule,sync,merge,enabled};
+})();
+
+devClass();window.addEventListener('resize',devClass);
+renderHome();
+if(!store.get('seenHow',false)) $('howOv').classList.add('on');
+</script>
+</body>
+</html>
