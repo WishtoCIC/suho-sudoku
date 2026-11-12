@@ -5,6 +5,7 @@
 - 사용 기기: 갤럭시 탭 S7(+S펜), 갤럭시 S25+ 휴대폰
 - 배포: **https://suho-sudoku.vercel.app** (Vercel, main 푸시 시 자동 배포) / 오프라인: `index.html` 파일을 탭에 넣어 삼성 인터넷으로 실행
 - 이어하기: Supabase (`supabase/schema.sql`)
+- 개발 안내: `CLAUDE.md` (Claude Code용 작업 맥락), 생성기 검사 `node tests/engine-check.mjs`
 
 ## 기능 (v1.6)
 - 말 종류: 동물 / 과일 / 탈것 / 색깔 / 숫자
