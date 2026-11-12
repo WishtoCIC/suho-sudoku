@@ -243,7 +243,7 @@
     <button class="pill" id="fsPill">⛶ 전체 화면</button>
     <button class="pill" id="soundBtn">🔊 소리 켜짐</button>
   </div>
-  <div style="margin-top:14px;font-size:14px;opacity:.45">버전 1.6 · 11월 8일</div>
+  <div style="margin-top:14px;font-size:14px;opacity:.45">버전 1.7 · 11월 12일</div>
 </section>
 
 <!-- GAME -->
@@ -756,7 +756,7 @@ function renderGame(){
     if(adult&&fpeers&&fpeers.has(i))d.classList.add('peer');
     if(helper&&hv&&v===hv)d.classList.add('hl');
     if(helper&&adult&&hv&&!v&&(G.notes[r][c]&(1<<hv)))d.classList.add('nhl');
-    if(helper&&v&&!given&&conflict(r,c,v))d.classList.add('bad');
+    if(helper&&v&&!given&&wrong(r,c,v))d.classList.add('bad');
     d.style.width=d.style.height=sz+'px';
     d.innerHTML = v?`<div class="piece ${given?'':'user'}">${pieceHTML(v,sz)}</div>`:(G.notes[r][c]?notesHTML(G.notes[r][c],n,sz):'');
     d.dataset.r=r;d.dataset.c=c;
@@ -808,6 +808,7 @@ function conflict(r,c,v){
   for(const p of G.L.S.peers[r*n+c])if(G.cur[p/n|0][p%n]===v)return true;
   return false;
 }
+function wrong(r,c,v){return (v||G.cur[r][c])!==G.sol[r][c]}
 function snap(){G.history.push({cur:G.cur.map(r=>[...r]),notes:G.notes.map(r=>[...r])});if(G.history.length>300)G.history.shift()}
 
 function trayPick(v){
@@ -848,8 +849,9 @@ function place(r,c,v){
   snap();G.selected=null;G.peek=0;
   G.cur[r][c]=v;G.notes[r][c]=0;
   if(isAdult())for(const p of G.L.S.peers[r*n+c])G.notes[p/n|0][p%n]&=~(1<<v);  // 같은 줄·칸 메모 자동 정리
-  const bad=conflict(r,c,v);
-  if(bad){G.mistakes++;sfx.bad();say(helper?(isAdult()?'같은 숫자가 겹쳐요 ⚠️':'앗! 같은 친구가 줄이나 방에 또 있어요 🤔'):'');}
+  const bad=wrong(r,c,v), dup=conflict(r,c,v);
+  if(bad){G.mistakes++;sfx.bad();say(helper?(isAdult()?(dup?'같은 숫자가 겹쳐요 ⚠️':'답이 아니에요 ⚠️')
+    :(dup?'앗! 같은 친구가 줄이나 방에 또 있어요 🤔':'앗! 이 칸은 다른 친구 자리야. 다시 골라 볼까? 🤔')):'');}
   else {sfx.put();if(!isAdult())say(['좋아요! 👍','멋져요! ✨','잘했어! 😄','최고야! 🌟'][Math.random()*4|0]);else say('')}
   renderGame();
   const el=$('board').children[r*n+c]; if(el&&!bad)el.classList.add('ok');

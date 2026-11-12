@@ -35,6 +35,7 @@
 - 엔진: `makeShape`(행·열·상자 + 대각선/윈도쿠 추가 영역, peers) · `solveCount`(답 개수) · `solveSingles`(기본 기술 풀이 → 난이도 판정) · `carve` · `makePuzzle`(어린이) · `makeAdult`(어른)
 - 상태 `G`: mode('kid'|'adult'), L{n,br,bc,S}, sol/puz/cur(2차원), notes(비트마스크), focus, history(스냅샷), memo, done
 - 입력 규칙(아빠 요청 v1.6, 유지할 것): **빈칸을 먼저 누르고 → 아래 숫자 선택으로 채움. 채운 뒤 아래 숫자 선택은 남지 않음.** 칸 없이 숫자를 누르면 안내만. (`onCell`, `trayPick`, `place`)
+- 오답 표시(아빠 요청 v1.7): 답(`G.sol`)과 다른 숫자를 놓으면 즉시 빨간 칸 — 겹침(`conflict`)이 아니라 `wrong(r,c,v)` 기준. 퍼즐은 답이 하나뿐(`solveCount===1`)이라 가능. `helper`(도우미) 꺼지면 표시 안 함
 - 어린이: 칸 채우면 focus 해제 / 어른: focus 유지, 메모 모드, 같은 줄 메모 자동 정리
 - 펜: `bwrap` pointer 이벤트 → `finishInk` → 애매하면 `showPicker`. 숫자 모드(`numMode()`)일 때만 쓰기
 - `layout()` — 판·트레이 크기 계산(가로/세로, phone 여부). `renderGame()`이 매번 판을 다시 그림
